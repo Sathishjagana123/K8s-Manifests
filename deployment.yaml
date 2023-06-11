@@ -1,24 +1,38 @@
-node {
-    def app
-
-    stage('Clone repository') {
-        checkout scm
-    }
-
-    stage('Update GIT') {
-        script {
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                withCredentials([usernamePassword(credentialsId: 'github', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                    sh "git config user.email satishjagana123@gmail.com"
-                    sh "git config user.name sathishjagana123"
-                    sh "cat deployment.yaml"
-                    sh "sed -i 's+dockersampath/packages.*+dockersampath/packages:${DOCKERTAG}+g' deployment.yaml"
-                    sh "cat deployment.yaml"
-                    sh "git add deployment.yaml"
-                    sh "git commit -m 'By Jenkins Job changemanifest: ${env.BUILD_NUMBER}'"
-                    sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${GIT_USERNAME}/K8s-Manifests.git HEAD:main" 
-                }
-            }
-        }
-    }
-}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: myapp
+  name: myapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - image: satishjagana/packages:7
+        name: myapp
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lb-service
+  labels:
+    app: lb-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5000
+  selector:
+    app: myapp
